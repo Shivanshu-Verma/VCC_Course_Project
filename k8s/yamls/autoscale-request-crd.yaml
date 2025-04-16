@@ -1,0 +1,30 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: autoscalerequests.htas.cloud
+spec:
+  group: htas.cloud
+  scope: Namespaced
+  names:
+    plural: autoscalerequests
+    singular: autoscalerequest
+    kind: AutoScaleRequest
+    shortNames:
+      - asr
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                workloadType:
+                  type: string
+                podNames:
+                  type: array
+                  items:
+                    type: string

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: instance-cleaner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: instance-cleaner
+  template:
+    metadata:
+      labels:
+        app: instance-cleaner
+    spec:
+      serviceAccountName: instance-cleaner-sa
+      containers:
+      - name: instance-cleaner
+        image: gcr.io/vcc-kubernetes/instance-cleaner:v1
+        env:
+        - name: RESOURCE_PROFILER_URL
+          value: "http://resource-profiler:8080"
+        - name: UTILIZATION_THRESHOLD
+          value: "50"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: instance-cleaner-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: instance-cleaner-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list", "watch", "delete", "patch"]
+- apiGroups: ["htas.cloud"]
+  resources: ["nodeprofiles"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: instance-cleaner-binding
+subjects:
+- kind: ServiceAccount
+  name: instance-cleaner-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: instance-cleaner-role
+  apiGroup: rbac.authorization.k8s.io

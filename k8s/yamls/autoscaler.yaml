@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: htas-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: htas-autoscaler
+  template:
+    metadata:
+      labels:
+        app: htas-autoscaler
+    spec:
+      serviceAccountName: htas-autoscaler-sa
+      containers:
+      - name: autoscaler
+        image: gcr.io/vcc-kubernetes/htas-autoscaler:v1
+        env:
+        - name: RESOURCE_PROFILER_URL
+          value: "http://resource-profiler:8080"
+        - name: GCP_ZONE
+          value: "us-central1-a"
+        - name: GKE_CLUSTER_NAME
+          value: "htas-cluster"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: htas-autoscaler-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: htas-autoscaler-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["htas.cloud"]
+  resources: ["nodeprofiles"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: htas-autoscaler-binding
+subjects:
+- kind: ServiceAccount
+  name: htas-autoscaler-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: htas-autoscaler-role
+  apiGroup: rbac.authorization.k8s.io
